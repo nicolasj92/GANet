@@ -19,7 +19,7 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from models.GANet_deep import GANet
-
+import matplotlib.pyplot as plt
 #from dataloader.data import get_test_set
 import numpy as np
 
@@ -130,9 +130,9 @@ def test_transform(temp_data, crop_height, crop_width):
     right[0, :, :, :] = temp_data[3: 6, :, :]
     return torch.from_numpy(left).float(), torch.from_numpy(right).float(), h, w
 
-def test_post_processing(pred, gt_height, gt_width):
-    zoom_h = gt_height / pred.shape[0]
-    zoom_w = gt_width / pred.shape[1]
+def test_post_processing(pred, target_height, target_width):
+    zoom_h = target_height / pred.shape[0]
+    zoom_w = target_width / pred.shape[1]
         
     pred = scipy.ndimage.zoom(pred, (zoom_h, zoom_w), order=1)
     return pred
@@ -161,10 +161,11 @@ def load_data(leftname, rightname):
     temp_data[3, :, :] = (r - np.mean(r[:])) / np.std(r[:])
     temp_data[4, :, :] = (g - np.mean(g[:])) / np.std(g[:])
     temp_data[5, :, :] = (b - np.mean(b[:])) / np.std(b[:])
-    return temp_data
+    return temp_data, size
 
 def test(leftname, rightname, savename):
-    input1, input2, height, width = test_transform(load_data(leftname, rightname), opt.crop_height, opt.crop_width)
+    data, size = load_data(leftname, rightname)
+    input1, input2, height, width = test_transform(data, opt.crop_height, opt.crop_width)
     input1 = Variable(input1, requires_grad = False)
     input2 = Variable(input2, requires_grad = False)
 
@@ -181,6 +182,9 @@ def test(leftname, rightname, savename):
         temp = temp[0, opt.crop_height - height: opt.crop_height, opt.crop_width - width: opt.crop_width]
     else:
         temp = temp[0, :, :]
+    temp = test_post_processing(temp, size[0], size[1])
+    # plt.imshow(temp)
+    # plt.show()
     skimage.io.imsave(savename, (temp * 256).astype('uint16'))
     return temp
 
@@ -224,8 +228,6 @@ if __name__ == "__main__":
         #     disp, height, width = readPFM(dispname)
        
         prediction = test(leftname, rightname, savename)
-
-        prediction = test_post_processing(prediction, disp.shape[0], disp.shape[1])
 
         mask = np.logical_and(disp >= 0.001, disp <= opt.max_disp)
 

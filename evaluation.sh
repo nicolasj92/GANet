@@ -1,3 +1,14 @@
+CUDA_VISIBLE_DEVICES=0 python evaluation.py --crop_height=480 \
+                                            --crop_width=960 \
+                                            --max_disp=192 \
+                                            --data_path='/media/nicolas/Data_1/projects/rvc_devkit/stereo/datasets_middlebury2014/training/' \
+                                            --test_list='/media/nicolas/Data_1/projects/rvc_devkit/stereo/datasets_middlebury2014/lists/training_eth3d.list' \
+                                            --save_path='./result/' \
+                                            --kitti2015=1 \
+                                            --threshold=3.0 \
+                                            --resume='./checkpoints/kitti2015_final.pth'
+exit
+
 CUDA_VISIBLE_DEVICES=0 python evaluation.py --crop_height=384 \
                                             --crop_width=1248 \
                                             --max_disp=192 \
