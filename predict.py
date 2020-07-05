@@ -3,6 +3,7 @@ import argparse
 import skimage
 import skimage.io
 import skimage.transform
+import imageio
 from PIL import Image
 from math import log10
 #from GCNet.modules.GCNet import L1Loss
@@ -19,6 +20,8 @@ from torch.utils.data import DataLoader
 #from models.GANet_deep import GANet
 from dataloader.data import get_test_set
 import numpy as np
+
+import matplotlib.pyplot as plt
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch GANet Example')
@@ -135,7 +138,9 @@ def test(leftname, rightname, savename):
         temp = temp[0, opt.crop_height - height: opt.crop_height, opt.crop_width - width: opt.crop_width]
     else:
         temp = temp[0, :, :]
-    skimage.io.imsave(savename, (temp * 256).astype('uint16'))
+
+    imageio.imwrite(savename, (temp * 256).astype('uint16'))
+
 
    
 if __name__ == "__main__":
@@ -145,13 +150,17 @@ if __name__ == "__main__":
     filelist = f.readlines()
     for index in range(len(filelist)):
         current_file = filelist[index]
-        if opt.kitti2015:
-            leftname = file_path + 'image_2/' + current_file[0: len(current_file) - 1]
-            rightname = file_path + 'image_3/' + current_file[0: len(current_file) - 1]
-        if opt.kitti:
-            leftname = file_path + 'colored_0/' + current_file[0: len(current_file) - 1]
-            rightname = file_path + 'colored_1/' + current_file[0: len(current_file) - 1]
+        leftname = os.path.join(file_path, current_file[0: len(current_file) - 1], "im0.png")
+        rightname = os.path.join(file_path, current_file[0: len(current_file) - 1], "im1.png")
+        print(leftname, rightname)
+        
+        # if opt.kitti2015:
+        #     leftname = file_path + 'image_2/' + current_file[0: len(current_file) - 1]
+        #     rightname = file_path + 'image_3/' + current_file[0: len(current_file) - 1]
+        # if opt.kitti:
+        #     leftname = file_path + 'colored_0/' + current_file[0: len(current_file) - 1]
+        #     rightname = file_path + 'colored_1/' + current_file[0: len(current_file) - 1]
 
-        savename = opt.save_path + current_file[0: len(current_file) - 1]
+        savename = opt.save_path + current_file[0: len(current_file) - 1] + ".png"
         test(leftname, rightname, savename)
 
