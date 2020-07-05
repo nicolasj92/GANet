@@ -1,14 +1,14 @@
-CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python train.py --batchSize=16 \
+CUDA_VISIBLE_DEVICES=0 python train.py --batchSize=1 \
                 --crop_height=240 \
-                --crop_width=528 \
+                --crop_width=480 \
                 --max_disp=192 \
-                --thread=16 \
-                --data_path='/ssd1/zhangfeihu/data/stereo/' \
-                --training_list='lists/sceneflow_train.list' \
-                --save_path='./checkpoint/sceneflow' \
+                --thread=12 \
+                --data_path='/media/nicolas/Data_1/projects/rvc_devkit/stereo/datasets_middlebury2014/training/' \
+                --training_list='/media/nicolas/Data_1/projects/rvc_devkit/stereo/datasets_middlebury2014/lists/training.list' \
+                --save_path='./checkpoints/rvc' \
                 --resume='' \
                 --model='GANet_deep' \
-                --nEpochs=11 2>&1 |tee logs/log_train_sceneflow.txt
+                --nEpochs=11 2>&1 |tee logs/log_train_rvc.txt
 
 exit
 #Fine tuning for kitti 2015

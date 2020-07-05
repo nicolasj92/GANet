@@ -240,7 +240,7 @@ def load_rvc_data(file_path, current_file):
     right = Image.open(filename)
     filename = os.path.join(file_path, current_file[0: len(current_file) - 1], "disp0GT.pfm")
 
-    disp_left = Image.open(filename)
+    disp_left, height, width = readPFM(filename)
     temp = np.asarray(disp_left)
     size = np.shape(left)
 

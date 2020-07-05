@@ -6,16 +6,18 @@ from libs.GANet.modules.GANet import MyLoss2
 import sys
 import shutil
 import os
+import itertools
 import torch
 import torch.nn as nn
 import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
 from torch.autograd import Variable
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 #from models.GANet_deep import GANet
 import torch.nn.functional as F
 from dataloader.data import get_training_set, get_test_set
+
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch GANet Example')
@@ -62,7 +64,14 @@ if cuda:
 print('===> Loading datasets')
 train_set = get_training_set(opt.data_path, opt.training_list, [opt.crop_height, opt.crop_width], opt.left_right, opt.kitti, opt.kitti2015, opt.shift)
 test_set = get_test_set(opt.data_path, opt.val_list, [576,960], opt.left_right, opt.kitti, opt.kitti2015)
-training_data_loader = DataLoader(dataset=train_set, num_workers=opt.threads, batch_size=opt.batchSize, shuffle=True, drop_last=True)
+
+n_samples = [27, 200, 15]
+probs = [[(1/len(n_samples)) / (n / sum(n_samples))] * n for n in n_samples]
+probs = list(itertools.chain(*probs))
+
+sampler = WeightedRandomSampler(probs, sum(n_samples))
+training_data_loader = DataLoader(dataset=train_set, sampler=sampler, num_workers=opt.threads, batch_size=opt.batchSize, shuffle=False, drop_last=True)
+# training_data_loader = DataLoader(dataset=train_set, num_workers=opt.threads, batch_size=opt.batchSize, shuffle=True, drop_last=True)
 testing_data_loader = DataLoader(dataset=test_set, num_workers=opt.threads, batch_size=opt.testBatchSize, shuffle=False)
 
 print('===> Building model')
