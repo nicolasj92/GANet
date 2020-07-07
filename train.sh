@@ -3,8 +3,8 @@ CUDA_VISIBLE_DEVICES=0 python train.py --batchSize=1 \
                 --crop_width=480 \
                 --max_disp=192 \
                 --thread=12 \
-                --data_path='/media/nicolas/Data_1/projects/rvc_devkit/stereo/datasets_middlebury2014/training/' \
-                --training_list='/media/nicolas/Data_1/projects/rvc_devkit/stereo/datasets_middlebury2014/lists/training.list' \
+                --data_path='./data/rvc_devkit/stereo/datasets_middlebury2014/training/' \
+                --training_list='./data/rvc_devkit/stereo/datasets_middlebury2014/lists/training.list' \
                 --save_path='./checkpoints/rvc' \
                 --resume='' \
                 --model='GANet_deep' \
