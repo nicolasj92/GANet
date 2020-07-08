@@ -2,11 +2,13 @@
 python predict.py --crop_height=240 \
                   --crop_width=528 \
                   --max_disp=192 \
-                  --data_path='/media/nicolas/Data_1/projects/rvc_devkit/stereo/datasets_middlebury2014/test/' \
-                  --test_list='/media/nicolas/Data_1/projects/rvc_devkit/stereo/datasets_middlebury2014/lists/test.list' \
+                  --data_path='./data/rvc_devkit/stereo/datasets_middlebury2014/test/' \
+                  --test_list='./data/rvc_devkit/stereo/datasets_middlebury2014/lists/test.list' \
                   --save_path='./result/' \
                   --kitti2015=1 \
-                  --resume='./checkpoints/kitti2015_final.pth'
+                  --resume='./checkpoints/sceneflow_epoch_10.pth'
+                  # --resume='./checkpoints/kitti2015_final.pth'
+                  # --resume='./checkpoints/rvc.pth'
 exit
 
 python predict.py --crop_height=384 \
