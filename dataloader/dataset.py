@@ -9,6 +9,8 @@ import random
 from struct import unpack
 import re
 import sys
+import os
+
 def readPFM(file): 
     with open(file, "rb") as f:
             # Line 1: PF=>RGB (3 channels), Pf=>Greyscale (1 channel)
@@ -187,6 +189,8 @@ def load_kitti_data(file_path, current_file):
     temp_data[6, :, :] = temp / 256.
     
     return temp_data
+
+
 def load_kitti2015_data(file_path, current_file):
     """ load current file from the list"""
     filename = file_path + 'image_2/' + current_file[0: len(current_file) - 1]
@@ -228,6 +232,46 @@ def load_kitti2015_data(file_path, current_file):
     return temp_data
 
 
+def load_rvc_data(file_path, current_file):
+    """ load current file from the list"""
+    filename = os.path.join(file_path, current_file[0: len(current_file) - 1], "im0.png")
+    left = Image.open(filename)
+    filename = os.path.join(file_path, current_file[0: len(current_file) - 1], "im1.png")
+    right = Image.open(filename)
+    filename = os.path.join(file_path, current_file[0: len(current_file) - 1], "disp0GT.pfm")
+
+    disp_left, height, width = readPFM(filename)
+    temp = np.asarray(disp_left)
+    size = np.shape(left)
+
+    height = size[0]
+    width = size[1]
+    temp_data = np.zeros([8, height, width], 'float32')
+    left = np.asarray(left)
+    right = np.asarray(right)
+    disp_left = np.asarray(disp_left)
+    r = left[:, :, 0]
+    g = left[:, :, 1]
+    b = left[:, :, 2]
+ 
+    temp_data[0, :, :] = (r - np.mean(r[:])) / np.std(r[:])
+    temp_data[1, :, :] = (g - np.mean(g[:])) / np.std(g[:])
+    temp_data[2, :, :] = (b - np.mean(b[:])) / np.std(b[:])
+    r = right[:, :, 0]
+    g = right[:, :, 1]
+    b = right[:, :, 2]	
+
+    temp_data[3, :, :] = (r - np.mean(r[:])) / np.std(r[:])
+    temp_data[4, :, :] = (g - np.mean(g[:])) / np.std(g[:])
+    temp_data[5, :, :] = (b - np.mean(b[:])) / np.std(b[:])
+    temp_data[6: 7, :, :] = width * 2
+    temp_data[6, :, :] = disp_left[:, :]
+    temp = temp_data[6, :, :]
+    temp[temp < 0.1] = width * 2 * 256
+    temp_data[6, :, :] = temp / 256.
+    
+    return temp_data
+
 
 class DatasetFromList(data.Dataset): 
     def __init__(self, data_path, file_list, crop_size=[256, 256], training=True, left_right=False, kitti=False, kitti2015=False, shift=0):
@@ -246,13 +290,16 @@ class DatasetFromList(data.Dataset):
 
     def __getitem__(self, index):
     #    print self.file_list[index]
-        if self.kitti: #load kitti dataset
-            temp_data = load_kitti_data(self.data_path, self.file_list[index])
-        elif self.kitti2015: #load kitti2015 dataset
-            temp_data = load_kitti2015_data(self.data_path, self.file_list[index])
-        else: #load scene flow dataset
-            temp_data = load_data(self.data_path, self.file_list[index])
-#        temp_data = load_data(self.data_path,self.file_list[index])
+        if True:
+            temp_data = load_rvc_data(self.data_path, self.file_list[index])
+        else:
+            if self.kitti: #load kitti dataset
+                temp_data = load_kitti_data(self.data_path, self.file_list[index])
+            elif self.kitti2015: #load kitti2015 dataset
+                temp_data = load_kitti2015_data(self.data_path, self.file_list[index])
+            else: #load scene flow dataset
+                temp_data = load_data(self.data_path, self.file_list[index])
+    #        temp_data = load_data(self.data_path,self.file_list[index])
         if self.training:
             input1, input2, target = train_transform(temp_data, self.crop_height, self.crop_width, self.left_right, self.shift)
             return input1, input2, target

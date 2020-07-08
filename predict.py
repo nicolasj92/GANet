@@ -1,8 +1,10 @@
 from __future__ import print_function
 import argparse
+import scipy
 import skimage
 import skimage.io
 import skimage.transform
+import imageio
 from PIL import Image
 from math import log10
 #from GCNet.modules.GCNet import L1Loss
@@ -19,6 +21,8 @@ from torch.utils.data import DataLoader
 #from models.GANet_deep import GANet
 from dataloader.data import get_test_set
 import numpy as np
+
+import matplotlib.pyplot as plt
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch GANet Example')
@@ -75,19 +79,36 @@ if opt.resume:
 def test_transform(temp_data, crop_height, crop_width):
     _, h, w=np.shape(temp_data)
 
-    if h <= crop_height and w <= crop_width:
-        temp = temp_data
-        temp_data = np.zeros([6, crop_height, crop_width], 'float32')
-        temp_data[:, crop_height - h: crop_height, crop_width - w: crop_width] = temp
-    else:
-        start_x = int((w - crop_width) / 2)
-        start_y = int((h - crop_height) / 2)
-        temp_data = temp_data[:, start_y: start_y + crop_height, start_x: start_x + crop_width]
+    if h != crop_height or w != crop_width:
+        zoom_h = crop_height / h
+        zoom_w = crop_width / w
+        
+        temp_data = scipy.ndimage.zoom(temp_data, (1, zoom_h, zoom_w), order=1)
+
+        h = crop_height
+        w = crop_width
+
+    # if h <= crop_height and w <= crop_width:
+    #     temp = temp_data
+    #     temp_data = np.zeros([6, crop_height, crop_width], 'float32')
+    #     temp_data[:, crop_height - h: crop_height, crop_width - w: crop_width] = temp
+    # else:
+    #     start_x = int((w - crop_width) / 2)
+    #     start_y = int((h - crop_height) / 2)
+    #     temp_data = temp_data[:, start_y: start_y + crop_height, start_x: start_x + crop_width]
     left = np.ones([1, 3,crop_height,crop_width],'float32')
     left[0, :, :, :] = temp_data[0: 3, :, :]
     right = np.ones([1, 3, crop_height, crop_width], 'float32')
     right[0, :, :, :] = temp_data[3: 6, :, :]
     return torch.from_numpy(left).float(), torch.from_numpy(right).float(), h, w
+
+def test_post_processing(pred, target_height, target_width):
+    zoom_h = target_height / pred.shape[0]
+    zoom_w = target_width / pred.shape[1]
+        
+    pred = scipy.ndimage.zoom(pred, (zoom_h, zoom_w), order=1)
+    return pred
+
 
 def load_data(leftname, rightname):
     left = Image.open(leftname)
@@ -111,12 +132,12 @@ def load_data(leftname, rightname):
     temp_data[3, :, :] = (r - np.mean(r[:])) / np.std(r[:])
     temp_data[4, :, :] = (g - np.mean(g[:])) / np.std(g[:])
     temp_data[5, :, :] = (b - np.mean(b[:])) / np.std(b[:])
-    return temp_data
+    return temp_data, size
 
 def test(leftname, rightname, savename):
   #  count=0
-    
-    input1, input2, height, width = test_transform(load_data(leftname, rightname), opt.crop_height, opt.crop_width)
+    data, size = load_data(leftname, rightname)
+    input1, input2, height, width = test_transform(data, opt.crop_height, opt.crop_width)
 
     
     input1 = Variable(input1, requires_grad = False)
@@ -135,7 +156,14 @@ def test(leftname, rightname, savename):
         temp = temp[0, opt.crop_height - height: opt.crop_height, opt.crop_width - width: opt.crop_width]
     else:
         temp = temp[0, :, :]
-    skimage.io.imsave(savename, (temp * 256).astype('uint16'))
+    
+    # rescale to target resolution
+    temp = test_post_processing(temp, size[0], size[1])
+
+    # write image
+    imageio.imwrite(savename, (temp * 256).astype('uint16'))
+
+
 
    
 if __name__ == "__main__":
@@ -145,13 +173,18 @@ if __name__ == "__main__":
     filelist = f.readlines()
     for index in range(len(filelist)):
         current_file = filelist[index]
-        if opt.kitti2015:
-            leftname = file_path + 'image_2/' + current_file[0: len(current_file) - 1]
-            rightname = file_path + 'image_3/' + current_file[0: len(current_file) - 1]
-        if opt.kitti:
-            leftname = file_path + 'colored_0/' + current_file[0: len(current_file) - 1]
-            rightname = file_path + 'colored_1/' + current_file[0: len(current_file) - 1]
+        leftname = os.path.join(file_path, current_file[0: len(current_file) - 1], "im0.png")
+        rightname = os.path.join(file_path, current_file[0: len(current_file) - 1], "im1.png")
+        print(leftname, rightname)
+        
+        # if opt.kitti2015:
+        #     leftname = file_path + 'image_2/' + current_file[0: len(current_file) - 1]
+        #     rightname = file_path + 'image_3/' + current_file[0: len(current_file) - 1]
+        # if opt.kitti:
+        #     leftname = file_path + 'colored_0/' + current_file[0: len(current_file) - 1]
+        #     rightname = file_path + 'colored_1/' + current_file[0: len(current_file) - 1]
 
-        savename = opt.save_path + current_file[0: len(current_file) - 1]
+        savename = opt.save_path + current_file[0: len(current_file) - 1] + ".png"
         test(leftname, rightname, savename)
+        
 
