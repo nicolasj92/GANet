@@ -233,44 +233,35 @@ def load_kitti2015_data(file_path, current_file):
 
 
 def load_rvc_data(file_path, current_file):
-    """ load current file from the list"""
     filename = os.path.join(file_path, current_file[0: len(current_file) - 1], "im0.png")
     left = Image.open(filename)
     filename = os.path.join(file_path, current_file[0: len(current_file) - 1], "im1.png")
     right = Image.open(filename)
     filename = os.path.join(file_path, current_file[0: len(current_file) - 1], "disp0GT.pfm")
-
     disp_left, height, width = readPFM(filename)
-    temp = np.asarray(disp_left)
     size = np.shape(left)
-
     height = size[0]
     width = size[1]
     temp_data = np.zeros([8, height, width], 'float32')
     left = np.asarray(left)
     right = np.asarray(right)
-    disp_left = np.asarray(disp_left)
     r = left[:, :, 0]
     g = left[:, :, 1]
-    b = left[:, :, 2]
- 
+    b = left[:,:,2]
     temp_data[0, :, :] = (r - np.mean(r[:])) / np.std(r[:])
     temp_data[1, :, :] = (g - np.mean(g[:])) / np.std(g[:])
     temp_data[2, :, :] = (b - np.mean(b[:])) / np.std(b[:])
-    r = right[:, :, 0]
-    g = right[:, :, 1]
-    b = right[:, :, 2]	
-
+    r=right[:, :, 0]
+    g=right[:, :, 1]
+    b=right[:, :, 2]	
     temp_data[3, :, :] = (r - np.mean(r[:])) / np.std(r[:])
     temp_data[4, :, :] = (g - np.mean(g[:])) / np.std(g[:])
     temp_data[5, :, :] = (b - np.mean(b[:])) / np.std(b[:])
     temp_data[6: 7, :, :] = width * 2
-    temp_data[6, :, :] = disp_left[:, :]
-    temp = temp_data[6, :, :]
-    temp[temp < 0.1] = width * 2 * 256
-    temp_data[6, :, :] = temp / 256.
-    
+    temp_data[6, :, :] = disp_left
+    # temp_data[7, :, :] = disp_right
     return temp_data
+
 
 
 class DatasetFromList(data.Dataset): 
