@@ -5,6 +5,8 @@ import skimage
 import skimage.io
 import skimage.transform
 import imageio
+import struct
+import time
 from PIL import Image
 from math import log10
 #from GCNet.modules.GCNet import L1Loss
@@ -37,6 +39,7 @@ parser.add_argument('--data_path', type=str, required=True, help="data root")
 parser.add_argument('--test_list', type=str, required=True, help="training list")
 parser.add_argument('--save_path', type=str, default='./result/', help="location to save result")
 parser.add_argument('--model', type=str, default='GANet_deep', help="model to train")
+parser.add_argument('--name', type=str, default='GANet_RVC', help='algorithm name for submission')
 
 opt = parser.parse_args()
 
@@ -76,6 +79,33 @@ if opt.resume:
         print("=> no checkpoint found at '{}'".format(opt.resume))
 
 
+# Converts a string to bytes (for writing the string into a file). Provided for
+# compatibility with Python 2 and 3.
+def StrToBytes(text):
+    if sys.version_info[0] == 2:
+        return text
+    else:
+        return bytes(text, 'UTF-8')
+
+# Writes a .pfm file containing a disparity image according to Middlebury format.
+# Expects pixels as a list of floats
+def WriteMiddlebury2014PfmFile(path, width, height, disp_data):
+    print(disp_data.shape)
+    disp_data = np.flip(disp_data, axis=1)
+    disp_float = disp_data.flatten().tolist()[::-1]
+    path = path.replace("png", "pfm")
+
+    # print(width, height)
+    # import matplotlib.pyplot as plt
+    # plt.imshow(disp_data)
+    # plt.show()
+
+    with open(path, 'wb') as pfm_file:
+        pfm_file.write(StrToBytes('Pf\n'))
+        pfm_file.write(StrToBytes(str(width) + ' ' + str(height) + '\n'))
+        pfm_file.write(StrToBytes('-1\n'))  # negative number means little endian
+        pfm_file.write(struct.pack('<' + str(len(disp_float)) + 'f', *disp_float))  # < means using little endian
+
 def test_transform(temp_data, crop_height, crop_width):
     _, h, w=np.shape(temp_data)
 
@@ -107,6 +137,7 @@ def test_post_processing(pred, target_height, target_width):
     zoom_w = target_width / pred.shape[1]
         
     pred = scipy.ndimage.zoom(pred, (zoom_h, zoom_w), order=1)
+    pred = pred * zoom_w
     return pred
 
 
@@ -134,7 +165,7 @@ def load_data(leftname, rightname):
     temp_data[5, :, :] = (b - np.mean(b[:])) / np.std(b[:])
     return temp_data, size
 
-def test(leftname, rightname, savename):
+def test(leftname, rightname, savename_disp, savename_runtime):
   #  count=0
     data, size = load_data(leftname, rightname)
     input1, input2, height, width = test_transform(data, opt.crop_height, opt.crop_width)
@@ -148,7 +179,10 @@ def test(leftname, rightname, savename):
         input1 = input1.cuda()
         input2 = input2.cuda()
     with torch.no_grad():
+        start = time.time()
         prediction = model(input1, input2)
+        end = time.time()
+        execution_time = np.round(end-start, 2)
      
     temp = prediction.cpu()
     temp = temp.detach().numpy()
@@ -161,8 +195,9 @@ def test(leftname, rightname, savename):
     temp = test_post_processing(temp, size[0], size[1])
 
     # write image
-    imageio.imwrite(savename, (temp * 256).astype('uint16'))
-
+    WriteMiddlebury2014PfmFile(savename_disp, size[1], size[0], temp)
+    with open(savename_runtime, 'w') as f:
+        f.writelines(str(execution_time))
 
 
    
@@ -175,16 +210,13 @@ if __name__ == "__main__":
         current_file = filelist[index]
         leftname = os.path.join(file_path, current_file[0: len(current_file) - 1], "im0.png")
         rightname = os.path.join(file_path, current_file[0: len(current_file) - 1], "im1.png")
-        print(leftname, rightname)
+        print("Processing file: {}".format(leftname))
         
-        # if opt.kitti2015:
-        #     leftname = file_path + 'image_2/' + current_file[0: len(current_file) - 1]
-        #     rightname = file_path + 'image_3/' + current_file[0: len(current_file) - 1]
-        # if opt.kitti:
-        #     leftname = file_path + 'colored_0/' + current_file[0: len(current_file) - 1]
-        #     rightname = file_path + 'colored_1/' + current_file[0: len(current_file) - 1]
-
-        savename = opt.save_path + current_file[0: len(current_file) - 1] + ".png"
-        test(leftname, rightname, savename)
+        savename_disp = os.path.join(file_path, current_file[0: len(current_file) - 1], "disp0{}.pfm".format(opt.name))
+        savename_runtime = os.path.join(file_path, current_file[0: len(current_file) - 1], "time{}.txt".format(opt.name))
+        
+        print("Saving result to file: {}".format(savename_disp))
+        
+        test(leftname, rightname, savename_disp, savename_runtime)
         
 
