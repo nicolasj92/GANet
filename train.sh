@@ -4,11 +4,12 @@ python train.py --batchSize=2 \
                 --max_disp=192 \
                 --thread=12 \
                 --data_path='./data/rvc_devkit/stereo/datasets_middlebury2014/training/' \
-                --training_list='./data/rvc_devkit/stereo/datasets_middlebury2014/lists/training.list' \
+                --training_list='./lists/rvc/training_split.list' \
+                --val_list='./lists/rvc/validation_split.list'  \
                 --save_path='./checkpoints/rvc.pth' \
-                --resume='sceneflow_epoch_10.pth' \
+                --resume='./checkpoints/sceneflow_epoch_10.pth' \
                 --model='GANet_deep' \
-                --nEpochs=11 2>&1 |tee logs/log_train_rvc.txt
+                --nEpochs=11 2>&1 # |tee logs/log_train_rvc.txt
 
 exit
 #Fine tuning for kitti 2015
