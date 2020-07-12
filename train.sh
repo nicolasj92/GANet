@@ -1,13 +1,15 @@
-python train.py --batchSize=2 \
+python train.py --batchSize=1 \
                 --crop_height=240 \
                 --crop_width=480 \
                 --max_disp=192 \
                 --thread=12 \
                 --data_path='./data/rvc_devkit/stereo/datasets_middlebury2014/training/' \
                 --training_list='./lists/rvc/training_split.list' \
-                --val_list='./lists/rvc/validation_split.list'  \
-                --save_path='./checkpoints/rvc.pth' \
-                --resume='./checkpoints/sceneflow_epoch_10.pth' \
+                --val_list_eth='./lists/rvc/validation_split_eth.list'  \
+                --val_list_mid='./lists/rvc/validation_split_mid.list'  \
+                --val_list_kitti='./lists/rvc/validation_split_kitti.list'  \
+                --save_path='./checkpoints/rvc/rvc.pth' \
+                --resume='./checkpoints/rvc/rvc_nico.pth_epoch_10.pth' \
                 --model='GANet_deep' \
                 --nEpochs=11 2>&1 # |tee logs/log_train_rvc.txt
 
