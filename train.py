@@ -78,9 +78,9 @@ train_set = get_training_set(opt.data_path, opt.training_list, [opt.crop_height,
 # n_samples = [27, 200, 15]
 # for train split
 n_samples = [21, 193, 12]
-test_set_mid = get_test_set(opt.data_path, opt.val_list_mid, [240, 672], opt.left_right, opt.kitti, opt.kitti2015)
-test_set_kitti = get_test_set(opt.data_path, opt.val_list_kitti, [240, 672], opt.left_right, opt.kitti, opt.kitti2015)
-test_set_eth = get_test_set(opt.data_path, opt.val_list_eth, [240, 672], opt.left_right, opt.kitti, opt.kitti2015)
+test_set_mid = get_test_set(opt.data_path, opt.val_list_mid, [-1, -1], opt.left_right, opt.kitti, opt.kitti2015)
+test_set_kitti = get_test_set(opt.data_path, opt.val_list_kitti, [-1, -1], opt.left_right, opt.kitti, opt.kitti2015)
+test_set_eth = get_test_set(opt.data_path, opt.val_list_eth, [-1, -1], opt.left_right, opt.kitti, opt.kitti2015)
 
 probs = [[(1/len(n_samples)) / (n / sum(n_samples))] * n for n in n_samples]
 probs = list(itertools.chain(*probs))
@@ -155,7 +155,7 @@ def train(epoch):
 
             # plt.imshow(target.cpu().detach().numpy()[0])
             # plt.show()
-                
+
             loss.backward()
             optimizer.step()
             error0 = torch.mean(torch.abs(disp0[mask] - target[mask]))
@@ -246,7 +246,7 @@ def save_checkpoint(save_path, epoch,state, is_best):
 
 
 def adjust_learning_rate(optimizer, epoch):
-    if epoch <= 400:
+    if epoch <= 100:
        lr = opt.lr
     else:
        lr = opt.lr*0.1
@@ -260,7 +260,7 @@ if __name__ == '__main__':
     for epoch in range(1, opt.nEpochs + 1):
 #        if opt.kitti or opt.kitti2015:
         adjust_learning_rate(optimizer, epoch)
-        # train(epoch)
+        train(epoch)
         res = val(epoch)
         exit()
         is_best = False

@@ -1,6 +1,6 @@
 python train.py --batchSize=1 \
-                --crop_height=240 \
-                --crop_width=480 \
+                --crop_height=-1 \
+                --crop_width=-1 \
                 --max_disp=192 \
                 --thread=12 \
                 --data_path='./data/rvc_devkit/stereo/datasets_middlebury2014/training/' \
@@ -9,7 +9,7 @@ python train.py --batchSize=1 \
                 --val_list_mid='./lists/rvc/validation_split_mid.list'  \
                 --val_list_kitti='./lists/rvc/validation_split_kitti.list'  \
                 --save_path='./checkpoints/rvc/rvc.pth' \
-                --resume='./checkpoints/rvc/rvc_nico.pth_epoch_10.pth' \
+                --resume='./checkpoints/Sat1400_240x672xbs16_kittiInit_finetune_100epochs/rvc.pth_epoch_100.pth' \
                 --model='GANet_deep' \
                 --nEpochs=11 2>&1 # |tee logs/log_train_rvc.txt
 

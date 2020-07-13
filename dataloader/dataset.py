@@ -47,8 +47,28 @@ def readPFM(file):
 #        quit()
     return img, height, width
 
+
 def train_transform(temp_data, crop_height, crop_width, left_right=False, shift=0):
     _, h, w = np.shape(temp_data)
+
+    if crop_height == -1 and crop_width == -1:
+        if shift > 0:
+            raise NotImplementedError("Shifting not implemented yet.")
+        # determine largest multiple of 48 with crop_height and crop_width as
+        # upper bound (due to network stride)
+        target_height = (h // 48) * 48
+        target_width = (w // 48) * 48
+
+        temp = temp_data
+        # temp_data = np.zeros([8, h, w], 'float32')
+        # temp_data[6:7, :, :] = 1000
+        start_height = random.randint(0, h - target_height)
+        start_width = random.randint(0, w - target_width)
+        temp_data = temp[:, h - target_height - start_height: h - start_height, w - target_width - start_width: w - start_width]
+        left = temp_data[0: 3, :, :]
+        right = temp_data[3: 6, :, :]
+        target = temp_data[6: 7, :, :]
+        return left, right, target
 
     if h > crop_height and w <= crop_width:
         temp = temp_data
@@ -99,6 +119,23 @@ def test_transform(temp_data, crop_height, crop_width, left_right=False):
     _, h, w = np.shape(temp_data)
  #   if crop_height-h>20 or crop_width-w>20:
  #       print 'crop_size over size!'
+
+    if crop_height == -1 and crop_width == -1:
+        # determine largest multiple of 48 with crop_height and crop_width as
+        # upper bound (due to network stride)
+        target_height = (h // 48) * 48
+        target_width = (w // 48) * 48
+
+        temp = temp_data
+        start_height = (h - target_height) // 2
+        start_width = (w - target_width) // 2
+        temp_data = temp[:, h - target_height - start_height: target_height + start_height, w - target_width - start_width: target_width + start_width]
+        left = temp_data[0: 3, :, :]
+        right = temp_data[3: 6, :, :]
+        target = temp_data[6: 7, :, :]
+        return left, right, target
+
+
     if h <= crop_height and w <= crop_width:
         temp = temp_data
         temp_data = np.zeros([8,crop_height,crop_width], 'float32')
@@ -253,7 +290,7 @@ def load_rvc_data(file_path, current_file):
     temp_data[2, :, :] = (b - np.mean(b[:])) / np.std(b[:])
     r=right[:, :, 0]
     g=right[:, :, 1]
-    b=right[:, :, 2]	
+    b=right[:, :, 2]
     temp_data[3, :, :] = (r - np.mean(r[:])) / np.std(r[:])
     temp_data[4, :, :] = (g - np.mean(g[:])) / np.std(g[:])
     temp_data[5, :, :] = (b - np.mean(b[:])) / np.std(b[:])
@@ -264,7 +301,7 @@ def load_rvc_data(file_path, current_file):
 
 
 
-class DatasetFromList(data.Dataset): 
+class DatasetFromList(data.Dataset):
     def __init__(self, data_path, file_list, crop_size=[256, 256], training=True, left_right=False, kitti=False, kitti2015=False, shift=0):
         super(DatasetFromList, self).__init__()
         #self.image_filenames = [join(image_dir, x) for x in listdir(image_dir) if is_image_file(x)]
