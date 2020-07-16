@@ -109,7 +109,19 @@ def WriteMiddlebury2014PfmFile(path, width, height, disp_data):
 def test_transform(temp_data, crop_height, crop_width):
     _, h, w=np.shape(temp_data)
 
-    if h != crop_height or w != crop_width:
+    if crop_height == -1 and crop_width == -1:
+        # determine largest multiple of 48 with crop_height and crop_width as
+        # upper bound (due to network stride)
+        target_height = ((h // 48)) * 48
+        target_width = ((w // 48)) * 48
+        print(target_height, target_width)
+        zoom_h = target_height / h
+        zoom_w = target_width / w
+        temp_data = scipy.ndimage.zoom(temp_data, (1, zoom_h, zoom_w), order=1)
+
+        h = target_height
+        w = target_width
+    elif h != crop_height or w != crop_width:
         zoom_h = crop_height / h
         zoom_w = crop_width / w
         
@@ -126,9 +138,9 @@ def test_transform(temp_data, crop_height, crop_width):
     #     start_x = int((w - crop_width) / 2)
     #     start_y = int((h - crop_height) / 2)
     #     temp_data = temp_data[:, start_y: start_y + crop_height, start_x: start_x + crop_width]
-    left = np.ones([1, 3,crop_height,crop_width],'float32')
+    left = np.ones([1, 3,target_height,target_width],'float32')
     left[0, :, :, :] = temp_data[0: 3, :, :]
-    right = np.ones([1, 3, crop_height, crop_width], 'float32')
+    right = np.ones([1, 3, target_height, target_width], 'float32')
     right[0, :, :, :] = temp_data[3: 6, :, :]
     return torch.from_numpy(left).float(), torch.from_numpy(right).float(), h, w
 
